@@ -1,0 +1,24 @@
+{
+  "name": "nodejsmongodb1st",
+  "version": "1.0.0",
+  "description": "A Notes Crud API in MongoDB",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon index.js",
+    "start-server": "node index.js"
+  },
+  "keywords": [],
+  "author": "Gunjan Sharma",
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^2.0.20"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "moment": "^2.29.4",
+    "mongodb": "^4.13.0",
+    "uuid": "^9.0.0"
+  }
+}
