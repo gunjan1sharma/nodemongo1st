@@ -474,32 +474,21 @@ const readNotesPaginated = async (req, res, next) => {
 const updateArraysInDocument = async (req, res, next) => {
   const { noteId } = req.params;
 
-  const updateNote = {
-    $set: {
-      title: req.body.title,
-      content: req.body.content,
-      isCompleted: req.body.isCompleted,
-      tag: req.body.tag,
-      updated_at: new Date(),
-    },
+  const query = { _id: noteId };
+  const updateDocument = {
+    $push: { "stats.$[].heading": `extra large stats heading` },
   };
-
-  notesCollection
-    .findOneAndUpdate({ _id: noteId }, updateNote)
+  const result = notesCollection
+    .updateOne(
+      { _id: noteId},
+      { $set: { "stats.title_lenght": 10001 } }
+    )
     .then((result) => {
       return res.status(200).json({
         statusCode: 200,
         status: "success",
         message: `Note Updated Successfully From Database..`,
         result: result,
-      });
-    })
-    .catch((error) => {
-      return res.status(500).json({
-        statusCode: 500,
-        status: "failed",
-        message: `Error Occured While Updating Note!!`,
-        error: error,
       });
     });
 };
