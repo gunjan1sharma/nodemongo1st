@@ -2,6 +2,8 @@ const { client, db } = require("../Config/dbConfig.js");
 const notesCollection = client.db("notesdb").collection("notes");
 const { v4: uuidv4 } = require("uuid");
 
+//Basic CRUD Starts
+
 const insertNote = async (req, res, next) => {
   const { title, content, tag, isCompleted } = req.body;
 
@@ -11,6 +13,11 @@ const insertNote = async (req, res, next) => {
     content: content,
     tag: tag,
     isCompleted: isCompleted,
+    stats: {
+      heading: "stats_heading",
+      title_lenght: title.length,
+      content_lenght: content.length,
+    },
     read_count: 0,
     created_at: new Date(),
     updated_at: new Date(),
@@ -61,6 +68,12 @@ const readNoteById = async (req, res, next) => {
 const readAllNotes = async (req, res, next) => {
   const sort = { created_at: -1 };
   const allNotes = await notesCollection.find({}).sort(sort).toArray();
+
+  var indexResult = await notesCollection.createIndex({
+    title: "text",
+    content: "text",
+  });
+  console.log(`indexResult ${indexResult}`);
 
   return res.status(200).json({
     statusCode: 200,
@@ -133,6 +146,8 @@ const readNotesByTag = async () => {};
 
 const readNotedByStatus = async () => {};
 
+//Advance CRUD Starts
+
 const insertMultipleNotes = async (req, res, next) => {
   const { title, content, tag, isCompleted } = req.body;
 
@@ -142,6 +157,11 @@ const insertMultipleNotes = async (req, res, next) => {
     content: content,
     tag: tag,
     isCompleted: isCompleted,
+    stats: {
+      heading: "stats_heading",
+      title_lenght: title.length,
+      content_lenght: content.length,
+    },
     created_at: new Date(),
     updated_at: new Date(),
   };
@@ -152,6 +172,11 @@ const insertMultipleNotes = async (req, res, next) => {
     content: content + " [ 2nd Batch Write ]",
     tag: tag,
     isCompleted: isCompleted,
+    stats: {
+      heading: "stats_heading",
+      title_lenght: title.length,
+      content_lenght: content.length,
+    },
     created_at: new Date(),
     updated_at: new Date(),
   };
@@ -167,11 +192,7 @@ const insertMultipleNotes = async (req, res, next) => {
   };
 
   try {
-    const insertManyNotes = await notesCollection.insertMany([
-      data,
-      dataTwo,
-      dataThree,
-    ]);
+    const insertManyNotes = await notesCollection.insertMany([data, dataTwo]);
     let ids = insertManyNotes.insertedIds;
 
     console.log(`${insertManyNotes.insertedCount} documents were inserted.`);
@@ -230,39 +251,6 @@ const deleteMultipleNotes = async (req, res, next) => {
   }
 };
 
-const updateMultipleDocuments = async (req, res, next) => {
-  const { updatableIds } = req.body;
-  console.log(updatableIds);
-
-  try {
-    var deleteResults = [];
-    for (let index = 0; index < updatableIds.length; index++) {
-      const element = updatableIds[index];
-      const notesBeingUpdated = await notesCollection.deleteOne({
-        _id: updatableIds[index],
-      });
-      console.log(notesBeingUpdated);
-      deleteResults.push(notesBeingUpdated);
-    }
-
-    return res.status(200).json({
-      statusCode: 200,
-      status: "success",
-      message: `Note With IDs ${deletableIds} Deleted Successfully From Database..`,
-      deleteResults: deleteResults,
-    });
-  } catch (error) {
-    console.log("Error Occured while deleting multiple notes : ", error);
-    return res.status(500).json({
-      statusCode: 500,
-      status: "failed",
-      message: `Note With IDs ${deletableIds} Deleted Failed From Database..`,
-      error: error,
-      deletableIds: deletableIds,
-    });
-  }
-};
-
 const sortNotesBasedOnTimestamp = async (req, res, next) => {
   try {
     const sort = { created_at: -1 };
@@ -290,35 +278,254 @@ const sortNotesBasedOnTimestamp = async (req, res, next) => {
   }
 };
 
-const incrementDocumentField = async (req, res, next) => {};
+const incrementDocumentField = async (req, res, next) => {
+  const noteId = req.params.noteId;
 
-const multiplyDocumentField = async (req, res, next) => {};
+  const filter = { _id: noteId };
+  const incrementDocument = {
+    $inc: {
+      read_count: 1,
+    },
+  };
 
-const renameDocumentField = async (req, res, next) => {};
+  try {
+    const result = await notesCollection.updateOne(filter, incrementDocument);
+    return res.status(200).json({
+      statusCode: 200,
+      status: "success",
+      message: `Note Incremented Successfully In Database..`,
+      result: result,
+      updatedNote: await notesCollection.findOne(filter),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      statusCode: 500,
+      status: "failed",
+      message: `Error Occured While Incrementing Note!!`,
+      error: error,
+    });
+  }
+};
 
-const removeDocumentField = async (req, res, next) => {};
+const multiplyDocumentField = async (req, res, next) => {
+  const noteId = req.params.noteId;
 
-const searchNotesByTitle = async (req, res, next) => {};
+  const filter = { _id: noteId };
+  const multiplyDocument = {
+    $mul: {
+      read_count: 2,
+    },
+  };
+
+  try {
+    const result = await notesCollection.updateOne(filter, multiplyDocument);
+    return res.status(200).json({
+      statusCode: 200,
+      status: "success",
+      message: `Note Multiplied Successfully In Database..`,
+      result: result,
+      updatedNote: await notesCollection.findOne(filter),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      statusCode: 500,
+      status: "failed",
+      message: `Error Occured While Multiplying Note!!`,
+      error: error,
+    });
+  }
+};
+
+const renameDocumentField = async (req, res, next) => {
+  const noteId = req.params.noteId;
+
+  const filter = { _id: noteId };
+  const renameDocument = {
+    $rename: {
+      read_count: "read_count_note",
+    },
+  };
+
+  try {
+    const result = await notesCollection.updateOne(filter, renameDocument);
+    return res.status(200).json({
+      statusCode: 200,
+      status: "success",
+      message: `Note renameed Successfully In Database..`,
+      result: result,
+      updatedNote: await notesCollection.findOne(filter),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      statusCode: 500,
+      status: "failed",
+      message: `Error Occured While renamaing Note!!`,
+      error: error,
+    });
+  }
+};
+
+const addDocumentField = async (req, res, next) => {
+  const noteId = req.params.noteId;
+
+  const filter = { _id: noteId };
+  const addDocumentField = {
+    $set: {
+      newly_added_field: 100,
+    },
+  };
+
+  try {
+    const result = await notesCollection.updateOne(filter, addDocumentField);
+    return res.status(200).json({
+      statusCode: 200,
+      status: "success",
+      message: `Note Field Added Successfully In Database..`,
+      result: result,
+      updatedNote: await notesCollection.findOne(filter),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      statusCode: 500,
+      status: "failed",
+      message: `Error Occured While Adding Field In Note!!`,
+      error: error,
+    });
+  }
+};
+
+const removeDocumentField = async (req, res, next) => {
+  const noteId = req.params.noteId;
+
+  const filter = { _id: noteId };
+  const removeDocumentField = {
+    $unset: {
+      newly_added_field: "",
+    },
+  };
+
+  try {
+    const result = await notesCollection.updateOne(filter, removeDocumentField);
+    return res.status(200).json({
+      statusCode: 200,
+      status: "success",
+      message: `Note Field removed Successfully In Database..`,
+      result: result,
+      updatedNote: await notesCollection.findOne(filter),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      statusCode: 500,
+      status: "failed",
+      message: `Error Occured While removing Field In Note!!`,
+      error: error,
+    });
+  }
+};
+
+const searchNotesByTitle = async (req, res, next) => {
+  const query = { $text: { $search: req.params.query } };
+
+  const projection = {
+    _id: 0,
+    title: 1,
+  };
+
+  var fetchNotes = [];
+  const cursor = notesCollection.find(query).project(projection);
+  await cursor.forEach((element) => {
+    fetchNotes.push(element);
+  });
+
+  return res.status(200).json({
+    statusCode: 200,
+    status: "success",
+    message: `Note Searching Successfully From Database..`,
+    totalSearchResults: fetchNotes.length,
+    note: fetchNotes,
+  });
+};
 
 const searchNotesByContent = async (req, res, next) => {};
 
-const searchNotesByMetadata = async (req, res, next) => {};
+const readNotesPaginated = async (req, res, next) => {
+  var pageNumber = req.params.pageNum;
+  const sort = { created_at: -1 };
+  const limit = 2;
+  var skip = pageNumber * limit;
 
-const readNotesPaginated = async (req, res, next) => {};
+  const allNotes = await notesCollection
+    .find({})
+    .sort(sort)
+    .limit(limit)
+    .skip(skip)
+    .toArray();
 
-const updateArraysInDocument = async (req, res, next) => {};
+  return res.status(200).json({
+    statusCode: 200,
+    status: "success",
+    message: `All Note Fetched Successfully From Database..`,
+    pageNumber: pageNumber,
+    totalNotes: allNotes.length,
+    notes: allNotes,
+  });
+};
 
-const retriveDistnictValue = async (req, res, next) => {};
+const updateArraysInDocument = async (req, res, next) => {
+  const { noteId } = req.params;
+
+  const updateNote = {
+    $set: {
+      title: req.body.title,
+      content: req.body.content,
+      isCompleted: req.body.isCompleted,
+      tag: req.body.tag,
+      updated_at: new Date(),
+    },
+  };
+
+  notesCollection
+    .findOneAndUpdate({ _id: noteId }, updateNote)
+    .then((result) => {
+      return res.status(200).json({
+        statusCode: 200,
+        status: "success",
+        message: `Note Updated Successfully From Database..`,
+        result: result,
+      });
+    })
+    .catch((error) => {
+      return res.status(500).json({
+        statusCode: 500,
+        status: "failed",
+        message: `Error Occured While Updating Note!!`,
+        error: error,
+      });
+    });
+};
+
+const retriveDistnictValue = async (req, res, next) => {
+  const project = { _id: 0, title: 1 };
+
+  var fetchNotes = [];
+  const cursor = notesCollection.find().project(project);
+  await cursor.forEach((element) => {
+    fetchNotes.push(element);
+  });
+  return res.status(200).json({
+    statusCode: 200,
+    status: "success",
+    message: `All Projected Notes Fetched Successfully From Database..`,
+    totalNotes: fetchNotes.length,
+    notes: fetchNotes,
+  });
+};
 
 const sortResults = async (req, res, next) => {};
 
 const skipReturnedResults = async (req, res, next) => {};
 
 const limitReturnedResults = async (req, res, next) => {};
-
-const specifyRetruningFields = async (req, res, next) => {};
-
-const searchText = async (req, res, next) => {};
 
 module.exports = {
   insertNote,
@@ -332,4 +539,13 @@ module.exports = {
   insertMultipleNotes,
   deleteMultipleNotes,
   sortNotesBasedOnTimestamp,
+  incrementDocumentField,
+  multiplyDocumentField,
+  renameDocumentField,
+  addDocumentField,
+  removeDocumentField,
+  searchNotesByTitle,
+  readNotesPaginated,
+  updateArraysInDocument,
+  retriveDistnictValue,
 };

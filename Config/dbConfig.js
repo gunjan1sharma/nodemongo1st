@@ -1,8 +1,12 @@
-const { MongoClient } = require("mongodb");
+const { MongoClient, ServerApiVersion } = require("mongodb");
 require("dotenv").config();
 const url = `mongodb+srv://${process.env.CLUSETR_USER_NAME}:${process.env.CLUSTER_PASSWORD}@cluster0.na24thz.mongodb.net/?retryWrites=true&w=majority`;
 
-const client = new MongoClient(url);
+const client = new MongoClient(url, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  serverApi: ServerApiVersion.v1,
+});
 const dbName = "notesdb";
 let db;
 
